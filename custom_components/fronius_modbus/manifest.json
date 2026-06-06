@@ -1,0 +1,12 @@
+{
+  "domain": "fronius_modbus",
+  "name": "Fronius Symo Modbus",
+  "version": "0.1.0",
+  "codeowners": ["@ferengi82"],
+  "config_flow": true,
+  "documentation": "https://github.com/ferengi82/home-assistant-fronius-modbus",
+  "integration_type": "device",
+  "iot_class": "local_polling",
+  "issue_tracker": "https://github.com/ferengi82/home-assistant-fronius-modbus/issues",
+  "requirements": ["pymodbus>=3.5.0"]
+}

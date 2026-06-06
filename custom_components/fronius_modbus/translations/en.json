@@ -1,0 +1,73 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Fronius Symo Modbus",
+        "description": "Connect to a Fronius Symo (Advanced) inverter via Modbus TCP. Enable Modbus TCP in the Fronius Datamanager web interface (Settings → Modbus) first.",
+        "data": {
+          "host": "Host / IP address",
+          "name": "Name",
+          "port": "Modbus TCP port",
+          "unit_id": "Modbus unit / slave ID",
+          "scan_interval": "Scan interval (seconds)"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Failed to connect. Check the IP address, port and that Modbus TCP is enabled on the Datamanager.",
+      "invalid_sunspec": "Connected, but no SunSpec inverter model was found. Check the Modbus unit ID and SunSpec settings."
+    },
+    "abort": {
+      "already_configured": "This inverter is already configured."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Fronius Symo Modbus options",
+        "data": {
+          "scan_interval": "Scan interval (seconds)"
+        }
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "ac_power": { "name": "AC power" },
+      "ac_energy": { "name": "Lifetime energy" },
+      "ac_current": { "name": "AC current" },
+      "ac_voltage_a": { "name": "AC voltage L1" },
+      "ac_voltage_b": { "name": "AC voltage L2" },
+      "ac_voltage_c": { "name": "AC voltage L3" },
+      "ac_frequency": { "name": "Grid frequency" },
+      "ac_va": { "name": "Apparent power" },
+      "ac_var": { "name": "Reactive power" },
+      "ac_pf": { "name": "Power factor" },
+      "dc_power": { "name": "DC power" },
+      "dc_voltage": { "name": "DC voltage" },
+      "dc_current": { "name": "DC current" },
+      "temp_cabinet": { "name": "Cabinet temperature" },
+      "nameplate_wrtg": { "name": "Rated power" },
+      "nameplate_artg": { "name": "Rated current" },
+      "operating_state": {
+        "name": "Operating state",
+        "state": {
+          "off": "Off",
+          "sleeping": "Sleeping",
+          "starting": "Starting",
+          "mppt": "Producing (MPPT)",
+          "throttled": "Throttled",
+          "shutting_down": "Shutting down",
+          "fault": "Fault",
+          "standby": "Standby",
+          "no_businit": "No SolarNet communication",
+          "no_comm_inv": "No inverter communication",
+          "sn_overcurrent": "SolarNet overcurrent",
+          "bootload": "Updating",
+          "afci": "AFCI event",
+          "unknown": "Unknown"
+        }
+      }
+    }
+  }
+}

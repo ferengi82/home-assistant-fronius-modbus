@@ -26,9 +26,16 @@
       "init": {
         "title": "Fronius Symo Modbus options",
         "data": {
+          "host": "Host / IP address",
+          "port": "Modbus TCP port",
+          "unit_id": "Modbus unit / slave ID",
           "scan_interval": "Scan interval (seconds)"
         }
       }
+    },
+    "error": {
+      "cannot_connect": "Failed to connect. Check the IP address, port and that Modbus TCP is enabled on the Datamanager.",
+      "invalid_sunspec": "Connected, but no SunSpec inverter model was found. Check the Modbus unit ID and SunSpec settings."
     }
   },
   "entity": {
@@ -49,6 +56,33 @@
       "temp_cabinet": { "name": "Cabinet temperature" },
       "nameplate_wrtg": { "name": "Rated power" },
       "nameplate_artg": { "name": "Rated current" },
+      "ac_current_a": { "name": "AC current L1" },
+      "ac_current_b": { "name": "AC current L2" },
+      "ac_current_c": { "name": "AC current L3" },
+      "ac_voltage_ab": { "name": "AC voltage L1-L2" },
+      "ac_voltage_bc": { "name": "AC voltage L2-L3" },
+      "ac_voltage_ca": { "name": "AC voltage L3-L1" },
+      "isolation_resistance": { "name": "Isolation resistance" },
+      "string_dc_power": { "name": "String {string} DC power" },
+      "string_dc_energy": { "name": "String {string} energy" },
+      "string_dc_voltage": { "name": "String {string} DC voltage" },
+      "string_dc_current": { "name": "String {string} DC current" },
+      "string_temp": { "name": "String {string} temperature" },
+      "string_state": {
+        "name": "String {string} state",
+        "state": {
+          "off": "Off",
+          "sleeping": "Sleeping",
+          "starting": "Starting",
+          "mppt": "Producing (MPPT)",
+          "throttled": "Throttled",
+          "shutting_down": "Shutting down",
+          "fault": "Fault",
+          "standby": "Standby",
+          "test": "Test",
+          "unknown": "Unknown"
+        }
+      },
       "operating_state": {
         "name": "Operating state",
         "state": {

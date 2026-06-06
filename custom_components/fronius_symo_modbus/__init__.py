@@ -29,17 +29,17 @@ type FroniusConfigEntry = ConfigEntry[FroniusModbusCoordinator]
 
 async def async_setup_entry(hass: HomeAssistant, entry: FroniusConfigEntry) -> bool:
     """Set up Fronius Symo Modbus from a config entry."""
-    scan_interval = entry.options.get(
-        CONF_SCAN_INTERVAL,
-        entry.data.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL),
-    )
+    # Options (set via the options flow) take precedence over the original
+    # setup data so host / port / unit ID / interval can be changed later.
+    def opt(key: str, default):
+        return entry.options.get(key, entry.data.get(key, default))
 
     coordinator = FroniusModbusCoordinator(
         hass,
-        host=entry.data[CONF_HOST],
-        port=entry.data.get(CONF_PORT, DEFAULT_PORT),
-        unit_id=entry.data.get(CONF_UNIT_ID, DEFAULT_UNIT_ID),
-        scan_interval=scan_interval,
+        host=opt(CONF_HOST, entry.data[CONF_HOST]),
+        port=opt(CONF_PORT, DEFAULT_PORT),
+        unit_id=opt(CONF_UNIT_ID, DEFAULT_UNIT_ID),
+        scan_interval=opt(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL),
         entry=entry,
     )
 

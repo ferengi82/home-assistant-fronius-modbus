@@ -39,6 +39,8 @@ INVERTER_MODELS_INT = (101, 102, 103)
 INVERTER_MODELS_FLOAT = (111, 112, 113)
 COMMON_MODEL = 1
 NAMEPLATE_MODEL = 120
+EXTENDED_MODEL = 122
+MULTI_MPPT_MODEL = 160
 
 
 @dataclass(frozen=True)
@@ -306,3 +308,79 @@ def find_inverter_model(models: dict[int, ModelLocation]) -> int | None:
         if model_id in models:
             return model_id
     return None
+
+
+# --- Multi-MPPT model (160) -------------------------------------------------
+#
+# Fixed header (offsets within the model data block):
+#   0 DCA_SF, 1 DCV_SF, 2 DCW_SF, 3 DCWH_SF, 4-5 Evt, 6 N, 7 TmsPer
+# Then ``N`` repeating module blocks of 20 registers, module i at base 8+i*20:
+#   +0 ID, +1..+8 IDStr(8), +9 DCA, +10 DCV, +11 DCW, +12..+13 DCWH(acc32),
+#   +14..+15 Tms, +16 Tmp(int16), +17 DCSt(enum16), +18..+19 DCEvt
+_MPPT_FIXED_LEN = 8
+_MPPT_MODULE_LEN = 20
+
+# DC operating-state enum for a single MPPT module (SunSpec DCEvt/DCSt).
+MPPT_STATES = {
+    1: "off",
+    2: "sleeping",
+    3: "starting",
+    4: "mppt",
+    5: "throttled",
+    6: "shutting_down",
+    7: "fault",
+    8: "standby",
+    9: "test",
+}
+
+
+def decode_multi_mppt(block: list[int]) -> dict[str, int | float | str | None]:
+    """Decode the Multi-MPPT model (160) into per-string values.
+
+    Returns a dict with ``num_strings`` plus, for each string ``n`` (1-based):
+    ``string_{n}_dc_current/voltage/power/energy/temp`` and
+    ``string_{n}_state`` / ``string_{n}_name``.
+    """
+    if len(block) < _MPPT_FIXED_LEN:
+        return {"num_strings": 0}
+    dca_sf = _sunssf(block, 0)
+    dcv_sf = _sunssf(block, 1)
+    dcw_sf = _sunssf(block, 2)
+    dcwh_sf = _sunssf(block, 3)
+    count = block[6]
+    if count in (0, _NAN_UINT16):
+        return {"num_strings": 0}
+
+    result: dict[str, int | float | str | None] = {"num_strings": count}
+    for i in range(count):
+        base = _MPPT_FIXED_LEN + i * _MPPT_MODULE_LEN
+        if base + _MPPT_MODULE_LEN > len(block):
+            break
+        n = i + 1
+        result[f"string_{n}_name"] = _string(block, base + 1, 8)
+        result[f"string_{n}_dc_current"] = apply_scale(_u16(block, base + 9), dca_sf)
+        result[f"string_{n}_dc_voltage"] = apply_scale(_u16(block, base + 10), dcv_sf)
+        result[f"string_{n}_dc_power"] = apply_scale(_u16(block, base + 11), dcw_sf)
+        result[f"string_{n}_dc_energy"] = apply_scale(_acc32(block, base + 12), dcwh_sf)
+        result[f"string_{n}_temp"] = _s16(block, base + 16)
+        state = _u16(block, base + 17)
+        result[f"string_{n}_state"] = (
+            MPPT_STATES.get(int(state), "unknown") if state is not None else None
+        )
+    return result
+
+
+# --- Extended Measurements & Status model (122) -----------------------------
+#
+# Notable offsets within the model data block:
+#   42 Ris (uint16, isolation resistance), 43 Ris_SF (sunssf)
+
+
+def decode_extended(block: list[int]) -> dict[str, int | float | None]:
+    """Decode a useful subset of the Extended Measurements & Status model (122)."""
+    result: dict[str, int | float | None] = {}
+    if len(block) > 43:
+        result["isolation_resistance"] = apply_scale(
+            _u16(block, 42), _sunssf(block, 43)
+        )
+    return result

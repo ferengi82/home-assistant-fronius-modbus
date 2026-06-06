@@ -19,7 +19,7 @@ from homeassistant.const import (
     UnitOfTemperature,
 )
 
-from .sunspec import OPERATING_STATES
+from .sunspec import MPPT_STATES, OPERATING_STATES
 
 # Each description's ``key`` matches a key produced by the coordinator data dict.
 INVERTER_SENSORS: tuple[SensorEntityDescription, ...] = (
@@ -168,4 +168,133 @@ NAMEPLATE_SENSORS: tuple[SensorEntityDescription, ...] = (
     ),
 )
 
-ALL_SENSORS = INVERTER_SENSORS + NAMEPLATE_SENSORS
+# Additional, less common inverter measurements (disabled by default).
+EXTRA_INVERTER_SENSORS: tuple[SensorEntityDescription, ...] = (
+    SensorEntityDescription(
+        key="ac_current_a",
+        translation_key="ac_current_a",
+        device_class=SensorDeviceClass.CURRENT,
+        native_unit_of_measurement=UnitOfElectricCurrent.AMPERE,
+        state_class=SensorStateClass.MEASUREMENT,
+        suggested_display_precision=2,
+        entity_registry_enabled_default=False,
+    ),
+    SensorEntityDescription(
+        key="ac_current_b",
+        translation_key="ac_current_b",
+        device_class=SensorDeviceClass.CURRENT,
+        native_unit_of_measurement=UnitOfElectricCurrent.AMPERE,
+        state_class=SensorStateClass.MEASUREMENT,
+        suggested_display_precision=2,
+        entity_registry_enabled_default=False,
+    ),
+    SensorEntityDescription(
+        key="ac_current_c",
+        translation_key="ac_current_c",
+        device_class=SensorDeviceClass.CURRENT,
+        native_unit_of_measurement=UnitOfElectricCurrent.AMPERE,
+        state_class=SensorStateClass.MEASUREMENT,
+        suggested_display_precision=2,
+        entity_registry_enabled_default=False,
+    ),
+    SensorEntityDescription(
+        key="ac_voltage_ab",
+        translation_key="ac_voltage_ab",
+        device_class=SensorDeviceClass.VOLTAGE,
+        native_unit_of_measurement=UnitOfElectricPotential.VOLT,
+        state_class=SensorStateClass.MEASUREMENT,
+        suggested_display_precision=1,
+        entity_registry_enabled_default=False,
+    ),
+    SensorEntityDescription(
+        key="ac_voltage_bc",
+        translation_key="ac_voltage_bc",
+        device_class=SensorDeviceClass.VOLTAGE,
+        native_unit_of_measurement=UnitOfElectricPotential.VOLT,
+        state_class=SensorStateClass.MEASUREMENT,
+        suggested_display_precision=1,
+        entity_registry_enabled_default=False,
+    ),
+    SensorEntityDescription(
+        key="ac_voltage_ca",
+        translation_key="ac_voltage_ca",
+        device_class=SensorDeviceClass.VOLTAGE,
+        native_unit_of_measurement=UnitOfElectricPotential.VOLT,
+        state_class=SensorStateClass.MEASUREMENT,
+        suggested_display_precision=1,
+        entity_registry_enabled_default=False,
+    ),
+)
+
+# Extended Measurements & Status model (122) diagnostic sensors.
+EXTENDED_SENSORS: tuple[SensorEntityDescription, ...] = (
+    SensorEntityDescription(
+        key="isolation_resistance",
+        translation_key="isolation_resistance",
+        native_unit_of_measurement="kΩ",
+        state_class=SensorStateClass.MEASUREMENT,
+        entity_category=EntityCategory.DIAGNOSTIC,
+        entity_registry_enabled_default=False,
+    ),
+)
+
+ALL_SENSORS = (
+    INVERTER_SENSORS + EXTRA_INVERTER_SENSORS + NAMEPLATE_SENSORS + EXTENDED_SENSORS
+)
+
+
+def string_sensor_descriptions(index: int) -> tuple[SensorEntityDescription, ...]:
+    """Build the per-MPPT-string sensor descriptions for string ``index``.
+
+    The coordinator exposes keys like ``string_1_dc_power``; the matching
+    translation uses a ``{string}`` placeholder set on the entity.
+    """
+    p = f"string_{index}_"
+    return (
+        SensorEntityDescription(
+            key=f"{p}dc_power",
+            translation_key="string_dc_power",
+            device_class=SensorDeviceClass.POWER,
+            native_unit_of_measurement=UnitOfPower.WATT,
+            state_class=SensorStateClass.MEASUREMENT,
+        ),
+        SensorEntityDescription(
+            key=f"{p}dc_energy",
+            translation_key="string_dc_energy",
+            device_class=SensorDeviceClass.ENERGY,
+            native_unit_of_measurement=UnitOfEnergy.WATT_HOUR,
+            state_class=SensorStateClass.TOTAL_INCREASING,
+            suggested_display_precision=0,
+        ),
+        SensorEntityDescription(
+            key=f"{p}dc_voltage",
+            translation_key="string_dc_voltage",
+            device_class=SensorDeviceClass.VOLTAGE,
+            native_unit_of_measurement=UnitOfElectricPotential.VOLT,
+            state_class=SensorStateClass.MEASUREMENT,
+            suggested_display_precision=1,
+        ),
+        SensorEntityDescription(
+            key=f"{p}dc_current",
+            translation_key="string_dc_current",
+            device_class=SensorDeviceClass.CURRENT,
+            native_unit_of_measurement=UnitOfElectricCurrent.AMPERE,
+            state_class=SensorStateClass.MEASUREMENT,
+            suggested_display_precision=2,
+        ),
+        SensorEntityDescription(
+            key=f"{p}temp",
+            translation_key="string_temp",
+            device_class=SensorDeviceClass.TEMPERATURE,
+            native_unit_of_measurement=UnitOfTemperature.CELSIUS,
+            state_class=SensorStateClass.MEASUREMENT,
+            suggested_display_precision=1,
+            entity_registry_enabled_default=False,
+        ),
+        SensorEntityDescription(
+            key=f"{p}state",
+            translation_key="string_state",
+            device_class=SensorDeviceClass.ENUM,
+            options=list(MPPT_STATES.values()) + ["unknown"],
+        ),
+    )

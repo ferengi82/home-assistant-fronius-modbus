@@ -132,3 +132,71 @@ def test_find_inverter_model(sunspec):
     assert sunspec.find_inverter_model({1: None, 103: None, 120: None}) == 103
     assert sunspec.find_inverter_model({1: None, 111: None}) == 111
     assert sunspec.find_inverter_model({1: None, 120: None}) is None
+
+
+def _mppt_block(n=2):
+    """Build a Multi-MPPT (160) data block with n modules."""
+    block = [0] * (8 + n * 20)
+    # SF: DCA=-2, DCV=-1, DCW=0, DCWH=0
+    block[0] = 0x10000 - 2  # -2 as uint16 (sunssf decoder converts back)
+    block[1] = 0x10000 - 1  # -1
+    block[2] = 0
+    block[3] = 0
+    block[6] = n  # N modules
+    for i in range(n):
+        base = 8 + i * 20
+        # IDStr "String {i+1}"
+        for j, reg in enumerate(_string_regs(f"String {i + 1}", 8)):
+            block[base + 1 + j] = reg
+        block[base + 9] = 150  # DCA -> 150 * 10^-2 = 1.5 A
+        block[base + 10] = 4000  # DCV -> 4000 * 10^-1 = 400.0 V
+        block[base + 11] = 600  # DCW -> 600 W
+        energy = 6390110
+        block[base + 12] = (energy >> 16) & 0xFFFF
+        block[base + 13] = energy & 0xFFFF
+        block[base + 16] = 35  # Tmp
+        block[base + 17] = 4  # DCSt -> mppt
+    return block
+
+
+def test_decode_multi_mppt(sunspec):
+    data = sunspec.decode_multi_mppt(_mppt_block(2))
+    assert data["num_strings"] == 2
+    assert data["string_1_name"] == "String 1"
+    assert data["string_1_dc_current"] == 1.5
+    assert data["string_1_dc_voltage"] == 400.0
+    assert data["string_1_dc_power"] == 600.0
+    assert data["string_1_dc_energy"] == 6390110
+    assert data["string_1_temp"] == 35
+    assert data["string_1_state"] == "mppt"
+    # Second string present too.
+    assert data["string_2_name"] == "String 2"
+    assert data["string_2_dc_power"] == 600.0
+
+
+def test_decode_multi_mppt_zero_strings(sunspec):
+    block = [0] * 8  # N = 0
+    assert sunspec.decode_multi_mppt(block) == {"num_strings": 0}
+
+
+def test_decode_extended_isolation(sunspec):
+    block = [0] * 44
+    block[42] = 10613  # Ris
+    block[43] = 0  # Ris_SF
+    data = sunspec.decode_extended(block)
+    assert data["isolation_resistance"] == 10613.0
+
+
+def test_full_chain_with_mppt(sunspec):
+    # marker + common + inverter(113) + nameplate + 122 + 160 + end
+    header = _marker()
+    header += [1, 66] + _common_block()
+    header += [113, 60] + _float_inverter()
+    header += [120, 26] + _nameplate()
+    header += [122, 44] + [0] * 44
+    header += [160, 48] + _mppt_block(2)
+    header += [0xFFFF, 0]
+    models = sunspec.parse_chain(header, 40000)
+    assert set(models) == {1, 113, 120, 122, 160}
+    assert sunspec.MULTI_MPPT_MODEL == 160
+    assert sunspec.EXTENDED_MODEL == 122

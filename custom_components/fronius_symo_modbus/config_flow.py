@@ -105,27 +105,53 @@ class FroniusModbusConfigFlow(ConfigFlow, domain=DOMAIN):
 
 
 class FroniusModbusOptionsFlow(OptionsFlow):
-    """Handle options (scan interval) for an existing entry."""
+    """Allow changing connection settings and scan interval after setup."""
+
+    def _current(self, key: str, default: Any) -> Any:
+        """Return the effective current value (options override data)."""
+        return self.config_entry.options.get(
+            key, self.config_entry.data.get(key, default)
+        )
 
     async def async_step_init(
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
         """Manage the options."""
+        errors: dict[str, str] = {}
         if user_input is not None:
-            return self.async_create_entry(title="", data=user_input)
+            try:
+                await _validate(self.hass, user_input)
+            except FroniusModbusError as err:
+                errors["base"] = (
+                    "invalid_sunspec"
+                    if "marker" in str(err).lower() or "inverter" in str(err).lower()
+                    else "cannot_connect"
+                )
+            else:
+                return self.async_create_entry(title="", data=user_input)
 
-        current = self.config_entry.options.get(
-            CONF_SCAN_INTERVAL,
-            self.config_entry.data.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL),
-        )
+        suggested = user_input or {
+            CONF_HOST: self._current(CONF_HOST, ""),
+            CONF_PORT: self._current(CONF_PORT, DEFAULT_PORT),
+            CONF_UNIT_ID: self._current(CONF_UNIT_ID, DEFAULT_UNIT_ID),
+            CONF_SCAN_INTERVAL: self._current(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL),
+        }
         return self.async_show_form(
             step_id="init",
             data_schema=vol.Schema(
                 {
-                    vol.Required(CONF_SCAN_INTERVAL, default=current): vol.All(
+                    vol.Required(CONF_HOST, default=suggested[CONF_HOST]): cv.string,
+                    vol.Required(CONF_PORT, default=suggested[CONF_PORT]): cv.port,
+                    vol.Required(
+                        CONF_UNIT_ID, default=suggested[CONF_UNIT_ID]
+                    ): vol.All(cv.positive_int, vol.Range(min=1, max=247)),
+                    vol.Required(
+                        CONF_SCAN_INTERVAL, default=suggested[CONF_SCAN_INTERVAL]
+                    ): vol.All(
                         cv.positive_int,
                         vol.Range(min=MIN_SCAN_INTERVAL, max=MAX_SCAN_INTERVAL),
                     ),
                 }
             ),
+            errors=errors,
         )

@@ -26,9 +26,16 @@
       "init": {
         "title": "Fronius Symo Modbus Optionen",
         "data": {
+          "host": "Host / IP-Adresse",
+          "port": "Modbus-TCP-Port",
+          "unit_id": "Modbus Unit-/Slave-ID",
           "scan_interval": "Abfrageintervall (Sekunden)"
         }
       }
+    },
+    "error": {
+      "cannot_connect": "Verbindung fehlgeschlagen. Prüfe IP-Adresse, Port und ob Modbus TCP am Datamanager aktiviert ist.",
+      "invalid_sunspec": "Verbunden, aber kein SunSpec-Wechselrichtermodell gefunden. Prüfe die Modbus Unit-ID und die SunSpec-Einstellungen."
     }
   },
   "entity": {
@@ -49,6 +56,33 @@
       "temp_cabinet": { "name": "Gehäusetemperatur" },
       "nameplate_wrtg": { "name": "Nennleistung" },
       "nameplate_artg": { "name": "Nennstrom" },
+      "ac_current_a": { "name": "AC-Strom L1" },
+      "ac_current_b": { "name": "AC-Strom L2" },
+      "ac_current_c": { "name": "AC-Strom L3" },
+      "ac_voltage_ab": { "name": "AC-Spannung L1-L2" },
+      "ac_voltage_bc": { "name": "AC-Spannung L2-L3" },
+      "ac_voltage_ca": { "name": "AC-Spannung L3-L1" },
+      "isolation_resistance": { "name": "Isolationswiderstand" },
+      "string_dc_power": { "name": "String {string} DC-Leistung" },
+      "string_dc_energy": { "name": "String {string} Energie" },
+      "string_dc_voltage": { "name": "String {string} DC-Spannung" },
+      "string_dc_current": { "name": "String {string} DC-Strom" },
+      "string_temp": { "name": "String {string} Temperatur" },
+      "string_state": {
+        "name": "String {string} Status",
+        "state": {
+          "off": "Aus",
+          "sleeping": "Ruhemodus",
+          "starting": "Startet",
+          "mppt": "Einspeisung (MPPT)",
+          "throttled": "Leistungsreduktion",
+          "shutting_down": "Schaltet ab",
+          "fault": "Fehler",
+          "standby": "Standby",
+          "test": "Test",
+          "unknown": "Unbekannt"
+        }
+      },
       "operating_state": {
         "name": "Betriebszustand",
         "state": {

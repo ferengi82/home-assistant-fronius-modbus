@@ -1,0 +1,73 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Fronius Symo Modbus",
+        "description": "Verbindung zu einem Fronius Symo (Advanced) Wechselrichter über Modbus TCP. Aktiviere zuvor Modbus TCP im Fronius Datamanager-Webinterface (Einstellungen → Modbus).",
+        "data": {
+          "host": "Host / IP-Adresse",
+          "name": "Name",
+          "port": "Modbus-TCP-Port",
+          "unit_id": "Modbus Unit-/Slave-ID",
+          "scan_interval": "Abfrageintervall (Sekunden)"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Verbindung fehlgeschlagen. Prüfe IP-Adresse, Port und ob Modbus TCP am Datamanager aktiviert ist.",
+      "invalid_sunspec": "Verbunden, aber kein SunSpec-Wechselrichtermodell gefunden. Prüfe die Modbus Unit-ID und die SunSpec-Einstellungen."
+    },
+    "abort": {
+      "already_configured": "Dieser Wechselrichter ist bereits eingerichtet."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Fronius Symo Modbus Optionen",
+        "data": {
+          "scan_interval": "Abfrageintervall (Sekunden)"
+        }
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "ac_power": { "name": "AC-Leistung" },
+      "ac_energy": { "name": "Gesamtenergie" },
+      "ac_current": { "name": "AC-Strom" },
+      "ac_voltage_a": { "name": "AC-Spannung L1" },
+      "ac_voltage_b": { "name": "AC-Spannung L2" },
+      "ac_voltage_c": { "name": "AC-Spannung L3" },
+      "ac_frequency": { "name": "Netzfrequenz" },
+      "ac_va": { "name": "Scheinleistung" },
+      "ac_var": { "name": "Blindleistung" },
+      "ac_pf": { "name": "Leistungsfaktor" },
+      "dc_power": { "name": "DC-Leistung" },
+      "dc_voltage": { "name": "DC-Spannung" },
+      "dc_current": { "name": "DC-Strom" },
+      "temp_cabinet": { "name": "Gehäusetemperatur" },
+      "nameplate_wrtg": { "name": "Nennleistung" },
+      "nameplate_artg": { "name": "Nennstrom" },
+      "operating_state": {
+        "name": "Betriebszustand",
+        "state": {
+          "off": "Aus",
+          "sleeping": "Ruhemodus",
+          "starting": "Startet",
+          "mppt": "Einspeisung (MPPT)",
+          "throttled": "Leistungsreduktion",
+          "shutting_down": "Schaltet ab",
+          "fault": "Fehler",
+          "standby": "Standby",
+          "no_businit": "Keine SolarNet-Kommunikation",
+          "no_comm_inv": "Keine Wechselrichter-Kommunikation",
+          "sn_overcurrent": "SolarNet-Überstrom",
+          "bootload": "Update läuft",
+          "afci": "AFCI-Ereignis",
+          "unknown": "Unbekannt"
+        }
+      }
+    }
+  }
+}

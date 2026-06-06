@@ -42,7 +42,7 @@ On the inverter's **Fronius Datamanager** web interface, open
 
 ### Manual
 
-Copy `custom_components/fronius_modbus` into your Home Assistant
+Copy `custom_components/fronius_symo_modbus` into your Home Assistant
 `config/custom_components/` directory and restart.
 
 ## Configuration

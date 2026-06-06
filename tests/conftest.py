@@ -11,7 +11,7 @@ import pytest
 _SUNSPEC_PATH = (
     pathlib.Path(__file__).resolve().parents[1]
     / "custom_components"
-    / "fronius_modbus"
+    / "fronius_symo_modbus"
     / "sunspec.py"
 )
 

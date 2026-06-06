@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Final
 
-DOMAIN: Final = "fronius_modbus"
+DOMAIN: Final = "fronius_symo_modbus"
 
 # Config / options keys
 CONF_HOST: Final = "host"

@@ -18,7 +18,7 @@
 | 120 | Nameplate (ratings) | 40133 | 26 |
 | 121 | Basic settings | 40161 | 30 |
 | 122 | Extended measurements & status | 40193 | 44 |
-| 123 | Immediate controls (not used; read-only) | 40239 | 24 |
+| 123 | Immediate controls (active-power limit, **write**) | 40239 | 24 |
 | 160 | Multi-MPPT (per string) | 40265 | 48 |
 | 0xFFFF | end | 40313 | — |
 
@@ -40,7 +40,11 @@ Operating-state enum (`St`): 1 off, 2 sleeping, 3 starting, 4 MPPT (producing), 
 
 ## Extended measurements & status (122)
 
-Implemented subset: `isolation_resistance` = `Ris` (offset 42, `uint16`) × `10**Ris_SF` (offset 43). Other fields (PV/storage/grid connection state, accumulated energy variants, time source) exist but are not exposed yet.
+Implemented subset:
+- `pv_connection` = `PVConn` (offset 0, bitfield) bit 0 → `connected` / `disconnected`.
+- `isolation_resistance` = `Ris` (offset 42, `uint16`) × `10**Ris_SF` (offset 43). On the test device `Ris` is not-implemented (`0xFFFF`) → the sensor stays unavailable.
+
+Other fields (storage/grid connection state, accumulated energy variants as `acc64`, time source) exist but are not exposed yet.
 
 ## Multi-MPPT model (160) — per-string data
 
@@ -63,8 +67,22 @@ Then `N` repeating **20-register** module blocks; module `i` starts at `8 + i*20
 
 The test device reports `N = 2` ("String 1", "String 2"), each with its own lifetime energy counter (sum ≈ inverter lifetime energy).
 
+> **Aggregate DC current/voltage:** the inverter block (113) reports `dc_current` and `dc_voltage` as not-implemented (NaN) on this firmware — only `dc_power` is filled. The coordinator therefore **derives `dc_current` as the sum of the per-string currents**. No aggregate DC voltage is exposed (two independent MPPT strings have no single meaningful voltage); use the per-string voltages.
+
+## Immediate controls (123) — active-power limit (write)
+
+Writable; only exposed when **inverter control is enabled** in the options flow (default off) and the model is present. Requires *"inverter control via Modbus"* to be enabled in the Fronius Datamanager, otherwise writes are rejected.
+
+| data offset | field | type | exposed as |
+| --- | --- | --- | --- |
+| +3 | WMaxLimPct | uint16 ×WMaxLimPct_SF | `number` "Active power limit" (0–100 %) |
+| +7 | WMaxLim_Ena | enum16 (0/1) | `switch` "Active power limit active" |
+| +21 | WMaxLimPct_SF | sunssf | scale factor (e.g. −2 → write `pct × 100`) |
+
+Write: `raw = round(pct / 10**WMaxLimPct_SF)` (see `sunspec.encode_power_limit`). Other model-123 points (Conn connect/disconnect, OutPFSet power factor, reactive-power VArPct) are present but intentionally not exposed.
+
 ## Not implemented (intentional)
 
-- Model 123 (immediate controls) — would enable power limiting / cos φ (write). The integration is read-only.
-- Meter models (2xx) — Fronius Smart Meter, if present.
+- Model 123: only the active-power limit; not connect/disconnect (`Conn`) or power factor (`OutPFSet`).
+- Meter models (2xx) — Fronius Smart Meter; not present on the test device's Modbus chain.
 - RTU transport — TCP only.

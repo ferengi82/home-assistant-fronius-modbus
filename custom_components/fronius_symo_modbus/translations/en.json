@@ -29,7 +29,11 @@
           "host": "Host / IP address",
           "port": "Modbus TCP port",
           "unit_id": "Modbus unit / slave ID",
-          "scan_interval": "Scan interval (seconds)"
+          "scan_interval": "Scan interval (seconds)",
+          "enable_control": "Enable inverter control (write access)"
+        },
+        "data_description": {
+          "enable_control": "Exposes a power-limit control. Requires 'inverter control via Modbus' to be enabled in the Fronius Datamanager."
         }
       }
     },
@@ -51,7 +55,6 @@
       "ac_var": { "name": "Reactive power" },
       "ac_pf": { "name": "Power factor" },
       "dc_power": { "name": "DC power" },
-      "dc_voltage": { "name": "DC voltage" },
       "dc_current": { "name": "DC current" },
       "temp_cabinet": { "name": "Cabinet temperature" },
       "nameplate_wrtg": { "name": "Rated power" },
@@ -63,6 +66,10 @@
       "ac_voltage_bc": { "name": "AC voltage L2-L3" },
       "ac_voltage_ca": { "name": "AC voltage L3-L1" },
       "isolation_resistance": { "name": "Isolation resistance" },
+      "pv_connection": {
+        "name": "PV connection",
+        "state": { "connected": "Connected", "disconnected": "Disconnected" }
+      },
       "string_dc_power": { "name": "String {string} DC power" },
       "string_dc_energy": { "name": "String {string} energy" },
       "string_dc_voltage": { "name": "String {string} DC voltage" },
@@ -102,6 +109,12 @@
           "unknown": "Unknown"
         }
       }
+    },
+    "number": {
+      "power_limit": { "name": "Active power limit" }
+    },
+    "switch": {
+      "power_limit_enabled": { "name": "Active power limit active" }
     }
   }
 }

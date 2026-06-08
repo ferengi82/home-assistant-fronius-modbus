@@ -83,6 +83,14 @@ class FroniusModbusCoordinator(DataUpdateCoordinator[dict[str, int | float | str
         # Static data read once at discovery and merged into every update.
         self.nameplate_data: dict[str, int | float | None] = {}
         self.num_strings: int = 0
+        # Last-seen scale factor for the active-power-limit register (model 123),
+        # needed to encode write values.
+        self._power_limit_sf: int | None = None
+
+    @property
+    def has_controls(self) -> bool:
+        """Return True if the inverter exposes the writable controls model (123)."""
+        return sunspec.CONTROL_MODEL in self.models
 
     # --- Connection helpers ---------------------------------------------
 
@@ -230,6 +238,8 @@ class FroniusModbusCoordinator(DataUpdateCoordinator[dict[str, int | float | str
                 data.update(await self._read_inverter())
                 data.update(await self._read_multi_mppt())
                 data.update(await self._read_extended())
+                data.update(await self._read_controls())
+                self._derive_dc_aggregates(data)
                 return data
             except FroniusModbusError as err:
                 # Drop the model map so the next cycle re-discovers after a
@@ -254,13 +264,88 @@ class FroniusModbusCoordinator(DataUpdateCoordinator[dict[str, int | float | str
         block = await self._read_block(location.data_address, location.length)
         return sunspec.decode_multi_mppt(block)
 
-    async def _read_extended(self) -> dict[str, int | float | None]:
+    async def _read_extended(self) -> dict[str, int | float | str | None]:
         """Read and decode the extended measurements model (122), if present."""
         location = self.models.get(sunspec.EXTENDED_MODEL)
         if location is None:
             return {}
         block = await self._read_block(location.data_address, location.length)
         return sunspec.decode_extended(block)
+
+    async def _read_controls(self) -> dict[str, int | float | bool | None]:
+        """Read and decode the immediate-controls model (123), if present."""
+        location = self.models.get(sunspec.CONTROL_MODEL)
+        if location is None:
+            return {}
+        block = await self._read_block(location.data_address, location.length)
+        decoded = sunspec.decode_controls(block)
+        # Cache the scale factor so writes can encode the percentage value.
+        self._power_limit_sf = decoded.get("power_limit_sf")
+        # The raw scale factor is an internal detail, not a sensor value.
+        decoded.pop("power_limit_sf", None)
+        return decoded
+
+    @staticmethod
+    def _derive_dc_aggregates(data: dict[str, int | float | str | None]) -> None:
+        """Fill aggregate DC current/power from per-string data when the
+        inverter model leaves them not-implemented (NaN), as Fronius firmware
+        does for the multi-MPPT Symo."""
+        for metric in ("dc_current", "dc_power"):
+            if data.get(metric) is not None:
+                continue
+            parts = [
+                value
+                for key, value in data.items()
+                if key.startswith("string_")
+                and key.endswith(f"_{metric.split('_', 1)[1]}")
+                and isinstance(value, (int, float))
+            ]
+            if parts:
+                data[metric] = round(sum(parts), 2)
+
+    # --- Control writes --------------------------------------------------
+
+    async def async_set_power_limit(self, pct: float) -> None:
+        """Write the active-power-limit percentage (WMaxLimPct) to model 123."""
+        await self._write_control_register(
+            sunspec.WMAXLIMPCT_OFFSET,
+            sunspec.encode_power_limit(pct, self._power_limit_sf),
+        )
+
+    async def async_set_power_limit_enabled(self, enabled: bool) -> None:
+        """Enable or disable the active-power limit (WMaxLim_Ena) in model 123."""
+        await self._write_control_register(
+            sunspec.WMAXLIM_ENA_OFFSET, 1 if enabled else 0
+        )
+
+    async def _write_control_register(self, offset: int, value: int) -> None:
+        """Write a single register inside the controls model and refresh."""
+        location = self.models.get(sunspec.CONTROL_MODEL)
+        if location is None:
+            raise FroniusModbusError("Inverter does not expose the controls model")
+        async with self._lock:
+            await self._write_register(location.data_address + offset, value)
+        await self.async_request_refresh()
+
+    async def _write_register(self, address: int, value: int) -> None:
+        """Write a single holding register, tolerating pymodbus keyword changes."""
+        client = await self._ensure_client()
+        try:
+            try:
+                result = await client.write_register(
+                    address, value, slave=self._unit_id
+                )
+            except TypeError:
+                result = await client.write_register(
+                    address, value, device_id=self._unit_id
+                )
+        except Exception as err:  # noqa: BLE001 - surface any pymodbus failure
+            raise FroniusModbusError(f"Modbus write error at {address}") from err
+        if result is None or result.isError():
+            raise FroniusModbusError(
+                f"Modbus write rejected at {address} "
+                "(is 'inverter control via Modbus' enabled on the Datamanager?)"
+            )
 
     @staticmethod
     def _decode_layout(

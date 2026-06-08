@@ -16,11 +16,13 @@ from homeassistant.core import callback
 from homeassistant.helpers import config_validation as cv
 
 from .const import (
+    CONF_ENABLE_CONTROL,
     CONF_HOST,
     CONF_NAME,
     CONF_PORT,
     CONF_SCAN_INTERVAL,
     CONF_UNIT_ID,
+    DEFAULT_ENABLE_CONTROL,
     DEFAULT_NAME,
     DEFAULT_PORT,
     DEFAULT_SCAN_INTERVAL,
@@ -135,6 +137,9 @@ class FroniusModbusOptionsFlow(OptionsFlow):
             CONF_PORT: self._current(CONF_PORT, DEFAULT_PORT),
             CONF_UNIT_ID: self._current(CONF_UNIT_ID, DEFAULT_UNIT_ID),
             CONF_SCAN_INTERVAL: self._current(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL),
+            CONF_ENABLE_CONTROL: self._current(
+                CONF_ENABLE_CONTROL, DEFAULT_ENABLE_CONTROL
+            ),
         }
         return self.async_show_form(
             step_id="init",
@@ -151,6 +156,10 @@ class FroniusModbusOptionsFlow(OptionsFlow):
                         cv.positive_int,
                         vol.Range(min=MIN_SCAN_INTERVAL, max=MAX_SCAN_INTERVAL),
                     ),
+                    vol.Required(
+                        CONF_ENABLE_CONTROL,
+                        default=suggested[CONF_ENABLE_CONTROL],
+                    ): cv.boolean,
                 }
             ),
             errors=errors,

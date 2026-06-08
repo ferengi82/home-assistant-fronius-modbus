@@ -13,15 +13,18 @@
 
 A custom [Home Assistant](https://www.home-assistant.io/) integration that reads **Fronius Symo (Advanced)** inverters over **Modbus TCP**, using the SunSpec register map exposed by the Fronius Datamanager card. Everything is configured from the Home Assistant UI — no YAML.
 
-> **Scope:** read-only. Modbus TCP only (no RTU), no control/writing, no Smart Meter entities yet. The architecture is extensible for those later.
+> **Scope:** read-only by default; an **opt-in active-power-limit control** can be enabled in the options. Modbus TCP only (no RTU), no Smart Meter entities yet. The architecture is extensible for those later.
 
 ### Features
 
 - 🔌 Modbus TCP, fully GUI-configurable (IP, port, unit ID, scan interval) — connection settings can also be changed later via the integration's options.
 - 🧭 **Automatic SunSpec model discovery** — walks the model chain, so it works with both the `float` (models 111/112/113) and `int+SF` (101/102/103) layouts without hardcoded register addresses.
-- ⚡ **Inverter sensors:** AC power, lifetime energy (Energy Dashboard ready), AC current, per-phase voltage, grid frequency, apparent/reactive power, power factor, DC power/voltage/current, cabinet temperature, operating state.
+- ⚡ **Inverter sensors:** AC power, lifetime energy (Energy Dashboard ready), AC current, per-phase voltage, grid frequency, apparent/reactive power, power factor, DC power, DC current, cabinet temperature, operating state.
 - 🔆 **Per-string (MPPT) sensors** (SunSpec model 160): DC power, voltage, current, lifetime energy, state and temperature for each string.
-- 🏷️ Device info from the common block (manufacturer, model, serial, firmware) plus diagnostic sensors (rated power/current, isolation resistance, per-phase currents, line-line voltages — disabled by default).
+- 🎛️ **Optional active-power-limit control** (SunSpec model 123, opt-in): a power-limit slider (0–100 %) and an enable switch.
+- 🏷️ Device info from the common block (manufacturer, model, serial, firmware) plus diagnostic sensors (rated power/current, isolation resistance, PV connection, per-phase currents, line-line voltages — disabled by default).
+
+> **DC current/voltage:** on the Symo's multi-MPPT firmware the inverter block reports the *aggregate* DC current and voltage as "not implemented", so **DC current is derived from the per-string sum** and there is no aggregate DC voltage — use the per-string `String N DC voltage` sensors. After updating, the old empty `DC voltage` entity may linger as *restored/unavailable*; delete it in Settings → Devices & Services → Entities.
 
 ### Prerequisites
 
@@ -47,9 +50,18 @@ Manual: copy `custom_components/fronius_symo_modbus` into your `config/custom_co
 | Modbus unit / slave ID | `1` | Inverter Modbus ID |
 | Scan interval | `10` s | Poll frequency |
 
-Host, port, unit ID and scan interval can be changed later via the entry's **Configure** button (Options).
+Host, port, unit ID, scan interval and **inverter control** can be changed later via the entry's **Configure** button (Options).
 
 > **Performance note:** The Datamanager is slow over Modbus — a full poll takes ~0.85–1.3 s, and it delivers at most ~1 read/second. Intervals below **5 s** are not allowed (and would not make data fresher). `5–10 s` is the sensible range.
+
+### Inverter control (active-power limit)
+
+Disabled by default. To use it:
+
+1. On the **Fronius Datamanager** (Settings → Modbus), set *"Inverter control via Modbus"* to the same SunSpec type as the meter (`float`/`int`). Without this, writes are rejected.
+2. In Home Assistant, open the integration's **Configure** and enable **Enable inverter control (write access)**.
+
+You then get two entities: a **number** "Active power limit" (0–100 % of rated power) and a **switch** "Active power limit active". The limit only takes effect while the switch is on. ⚠️ Writing changes the inverter's real output — test carefully.
 
 ### Verifying against your inverter
 
@@ -68,15 +80,18 @@ See [CLAUDE.md](CLAUDE.md) (architecture, conventions, build/test/deploy) and [d
 
 Eine benutzerdefinierte [Home-Assistant](https://www.home-assistant.io/)-Integration, die **Fronius Symo (Advanced)**-Wechselrichter über **Modbus TCP** ausliest — anhand der SunSpec-Registerkarte der Fronius-Datamanager-Karte. Alles wird über die Home-Assistant-Oberfläche konfiguriert — kein YAML.
 
-> **Umfang:** nur lesend. Nur Modbus TCP (kein RTU), keine Steuerung/Schreiben, noch keine Smart-Meter-Entitäten. Die Architektur ist dafür erweiterbar.
+> **Umfang:** standardmäßig nur lesend; eine **optionale Wirkleistungs-Begrenzung** lässt sich in den Optionen aktivieren. Nur Modbus TCP (kein RTU), noch keine Smart-Meter-Entitäten. Die Architektur ist dafür erweiterbar.
 
 ### Funktionen
 
 - 🔌 Modbus TCP, vollständig über die GUI konfigurierbar (IP, Port, Unit-ID, Abfrageintervall) — Verbindungseinstellungen sind auch nachträglich über die Optionen änderbar.
 - 🧭 **Automatische SunSpec-Model-Erkennung** — läuft die Model-Chain ab und funktioniert daher mit beiden Datamanager-Layouts (`float` 111/112/113 und `int+SF` 101/102/103), ohne harte Registeradressen.
-- ⚡ **Wechselrichter-Sensoren:** AC-Leistung, Gesamtenergie (Energie-Dashboard-tauglich), AC-Strom, Spannung je Phase, Netzfrequenz, Schein-/Blindleistung, Leistungsfaktor, DC-Leistung/-Spannung/-Strom, Gehäusetemperatur, Betriebszustand.
+- ⚡ **Wechselrichter-Sensoren:** AC-Leistung, Gesamtenergie (Energie-Dashboard-tauglich), AC-Strom, Spannung je Phase, Netzfrequenz, Schein-/Blindleistung, Leistungsfaktor, DC-Leistung, DC-Strom, Gehäusetemperatur, Betriebszustand.
 - 🔆 **Per-String-Sensoren (MPPT)** (SunSpec-Model 160): DC-Leistung, -Spannung, -Strom, Gesamtenergie, Status und Temperatur je String.
-- 🏷️ Geräteinfos aus dem Common Block (Hersteller, Modell, Seriennummer, Firmware) plus diagnostische Sensoren (Nennleistung/-strom, Isolationswiderstand, Phasenströme, Leiter-Leiter-Spannungen — standardmäßig deaktiviert).
+- 🎛️ **Optionale Wirkleistungs-Steuerung** (SunSpec-Model 123, opt-in): ein Limit-Regler (0–100 %) und ein Aktivierungs-Schalter.
+- 🏷️ Geräteinfos aus dem Common Block (Hersteller, Modell, Seriennummer, Firmware) plus diagnostische Sensoren (Nennleistung/-strom, Isolationswiderstand, PV-Verbindung, Phasenströme, Leiter-Leiter-Spannungen — standardmäßig deaktiviert).
+
+> **DC-Strom/-Spannung:** Bei der Multi-MPPT-Firmware des Symo meldet der Wechselrichter-Block den *aggregierten* DC-Strom und die DC-Spannung als „nicht implementiert". Daher wird der **DC-Strom aus der Summe der Strings abgeleitet**, und es gibt keine aggregierte DC-Spannung — nutze die Sensoren `String N DC-Spannung`. Nach dem Update kann die alte, leere `DC-Spannung`-Entität als *wiederhergestellt/nicht verfügbar* zurückbleiben; lösche sie unter Einstellungen → Geräte & Dienste → Entitäten.
 
 ### Voraussetzungen
 
@@ -102,9 +117,18 @@ Manuell: Ordner `custom_components/fronius_symo_modbus` nach `config/custom_comp
 | Modbus Unit-/Slave-ID | `1` | Modbus-ID des Wechselrichters |
 | Abfrageintervall | `10` s | Abfragefrequenz |
 
-Host, Port, Unit-ID und Abfrageintervall lassen sich nachträglich über die Schaltfläche **Konfigurieren** (Optionen) ändern.
+Host, Port, Unit-ID, Abfrageintervall und **Wechselrichter-Steuerung** lassen sich nachträglich über die Schaltfläche **Konfigurieren** (Optionen) ändern.
 
 > **Performance-Hinweis:** Der Datamanager ist über Modbus langsam — ein vollständiger Abruf dauert ~0,85–1,3 s, und er liefert höchstens ~1 Lesevorgang/Sekunde. Intervalle unter **5 s** sind nicht erlaubt (und würden die Daten nicht frischer machen). `5–10 s` ist der sinnvolle Bereich.
+
+### Wechselrichter-Steuerung (Wirkleistungs-Limit)
+
+Standardmäßig deaktiviert. So aktivierst du sie:
+
+1. Am **Fronius Datamanager** (Einstellungen → Modbus) *„Wechselrichter-Steuerung über Modbus"* auf denselben SunSpec-Typ wie den Zähler (`float`/`int`) stellen. Ohne dies werden Schreibzugriffe abgelehnt.
+2. In Home Assistant in den **Konfigurieren**-Optionen der Integration **Wechselrichter-Steuerung aktivieren (Schreibzugriff)** einschalten.
+
+Es erscheinen zwei Entitäten: eine **Number** „Wirkleistungs-Limit" (0–100 % der Nennleistung) und ein **Schalter** „Wirkleistungs-Limit aktiv". Das Limit wirkt nur, solange der Schalter an ist. ⚠️ Schreibzugriffe ändern die tatsächliche Ausgangsleistung des Wechselrichters — vorsichtig testen.
 
 ### Test gegen den eigenen Wechselrichter
 

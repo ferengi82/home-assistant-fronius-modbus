@@ -40,6 +40,7 @@ INVERTER_MODELS_FLOAT = (111, 112, 113)
 COMMON_MODEL = 1
 NAMEPLATE_MODEL = 120
 EXTENDED_MODEL = 122
+CONTROL_MODEL = 123
 MULTI_MPPT_MODEL = 160
 
 
@@ -376,11 +377,61 @@ def decode_multi_mppt(block: list[int]) -> dict[str, int | float | str | None]:
 #   42 Ris (uint16, isolation resistance), 43 Ris_SF (sunssf)
 
 
-def decode_extended(block: list[int]) -> dict[str, int | float | None]:
+def decode_extended(block: list[int]) -> dict[str, int | float | str | None]:
     """Decode a useful subset of the Extended Measurements & Status model (122)."""
-    result: dict[str, int | float | None] = {}
+    result: dict[str, int | float | str | None] = {}
+    # PVConn (offset 0) is a bitfield; bit 0 = CONNECTED.
+    if len(block) > 0:
+        pvconn = _u16(block, 0)
+        result["pv_connection"] = (
+            None if pvconn is None else ("connected" if pvconn & 0x1 else "disconnected")
+        )
     if len(block) > 43:
         result["isolation_resistance"] = apply_scale(
             _u16(block, 42), _sunssf(block, 43)
         )
     return result
+
+
+# --- Immediate Controls model (123) -----------------------------------------
+#
+# Writable inverter controls. Notable offsets within the model data block:
+#   3 WMaxLimPct (uint16, active power limit, scaled by WMaxLimPct_SF)
+#   7 WMaxLim_Ena (enum16: 0 = disabled, 1 = enabled)
+#   21 WMaxLimPct_SF (sunssf)
+WMAXLIMPCT_OFFSET = 3
+WMAXLIM_ENA_OFFSET = 7
+WMAXLIMPCT_SF_OFFSET = 21
+
+
+def decode_controls(block: list[int]) -> dict[str, int | float | bool | None]:
+    """Decode the writable active-power-limit controls from model 123.
+
+    Returns ``power_limit_pct`` (0-100 %), ``power_limit_enabled`` (bool) and
+    the raw ``power_limit_sf`` scale factor needed to encode a new setpoint.
+    """
+    result: dict[str, int | float | bool | None] = {
+        "power_limit_pct": None,
+        "power_limit_enabled": None,
+        "power_limit_sf": None,
+    }
+    if len(block) <= WMAXLIMPCT_SF_OFFSET:
+        return result
+    sf = _sunssf(block, WMAXLIMPCT_SF_OFFSET)
+    result["power_limit_sf"] = sf
+    result["power_limit_pct"] = apply_scale(_u16(block, WMAXLIMPCT_OFFSET), sf)
+    ena = _u16(block, WMAXLIM_ENA_OFFSET)
+    result["power_limit_enabled"] = None if ena is None else bool(ena)
+    return result
+
+
+def encode_power_limit(pct: float, sf: int | None) -> int:
+    """Encode an active-power-limit percentage into a raw register value.
+
+    Inverse of ``apply_scale``: ``raw = round(pct / 10**sf)``. Clamped to the
+    valid 0-100 % range and the uint16 register width.
+    """
+    pct = max(0.0, min(100.0, float(pct)))
+    scale = 0 if sf is None else sf
+    raw = round(pct / (10**scale))
+    return max(0, min(0xFFFF, raw))

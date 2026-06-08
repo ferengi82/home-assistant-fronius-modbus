@@ -22,7 +22,7 @@ from .coordinator import FroniusModbusCoordinator, FroniusModbusError
 
 _LOGGER = logging.getLogger(__name__)
 
-PLATFORMS: list[Platform] = [Platform.SENSOR]
+PLATFORMS: list[Platform] = [Platform.SENSOR, Platform.NUMBER, Platform.SWITCH]
 
 type FroniusConfigEntry = ConfigEntry[FroniusModbusCoordinator]
 

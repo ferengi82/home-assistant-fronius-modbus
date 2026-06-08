@@ -29,7 +29,11 @@
           "host": "Host / IP-Adresse",
           "port": "Modbus-TCP-Port",
           "unit_id": "Modbus Unit-/Slave-ID",
-          "scan_interval": "Abfrageintervall (Sekunden)"
+          "scan_interval": "Abfrageintervall (Sekunden)",
+          "enable_control": "Wechselrichter-Steuerung aktivieren (Schreibzugriff)"
+        },
+        "data_description": {
+          "enable_control": "Stellt eine Wirkleistungs-Begrenzung bereit. Erfordert, dass im Fronius Datamanager 'Wechselrichter-Steuerung über Modbus' aktiviert ist."
         }
       }
     },
@@ -51,7 +55,6 @@
       "ac_var": { "name": "Blindleistung" },
       "ac_pf": { "name": "Leistungsfaktor" },
       "dc_power": { "name": "DC-Leistung" },
-      "dc_voltage": { "name": "DC-Spannung" },
       "dc_current": { "name": "DC-Strom" },
       "temp_cabinet": { "name": "Gehäusetemperatur" },
       "nameplate_wrtg": { "name": "Nennleistung" },
@@ -63,6 +66,10 @@
       "ac_voltage_bc": { "name": "AC-Spannung L2-L3" },
       "ac_voltage_ca": { "name": "AC-Spannung L3-L1" },
       "isolation_resistance": { "name": "Isolationswiderstand" },
+      "pv_connection": {
+        "name": "PV-Verbindung",
+        "state": { "connected": "Verbunden", "disconnected": "Getrennt" }
+      },
       "string_dc_power": { "name": "String {string} DC-Leistung" },
       "string_dc_energy": { "name": "String {string} Energie" },
       "string_dc_voltage": { "name": "String {string} DC-Spannung" },
@@ -102,6 +109,12 @@
           "unknown": "Unbekannt"
         }
       }
+    },
+    "number": {
+      "power_limit": { "name": "Wirkleistungs-Limit" }
+    },
+    "switch": {
+      "power_limit_enabled": { "name": "Wirkleistungs-Limit aktiv" }
     }
   }
 }

@@ -63,6 +63,8 @@ Disabled by default. To use it:
 
 You then get two entities: a **number** "Active power limit" (0–100 % of rated power) and a **switch** "Active power limit active". The limit only takes effect while the switch is on. ⚠️ Writing changes the inverter's real output — test carefully.
 
+> Hardware-verified on a Symo Advanced 10.0-3-M: setting 50 % with the switch on throttled AC output from ~6.9 kW to ~5.0 kW; disabling the limit restored full output.
+
 ### Verifying against your inverter
 
 ```bash
@@ -129,6 +131,8 @@ Standardmäßig deaktiviert. So aktivierst du sie:
 2. In Home Assistant in den **Konfigurieren**-Optionen der Integration **Wechselrichter-Steuerung aktivieren (Schreibzugriff)** einschalten.
 
 Es erscheinen zwei Entitäten: eine **Number** „Wirkleistungs-Limit" (0–100 % der Nennleistung) und ein **Schalter** „Wirkleistungs-Limit aktiv". Das Limit wirkt nur, solange der Schalter an ist. ⚠️ Schreibzugriffe ändern die tatsächliche Ausgangsleistung des Wechselrichters — vorsichtig testen.
+
+> An einem Symo Advanced 10.0-3-M verifiziert: 50 % mit eingeschaltetem Schalter drosselte die AC-Leistung von ~6,9 kW auf ~5,0 kW; nach Deaktivieren des Limits lief der Wechselrichter wieder voll.
 
 ### Test gegen den eigenen Wechselrichter
 

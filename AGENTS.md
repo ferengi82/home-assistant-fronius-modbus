@@ -8,7 +8,7 @@ This file exists so AI coding tools that look for `AGENTS.md` (e.g. OpenAI Codex
 
 Quick reference:
 
-- Integration: Home Assistant custom component `fronius_symo_modbus`, reads a Fronius Symo Advanced over Modbus TCP (SunSpec). Read-only.
+- Integration: Home Assistant custom component `fronius_symo_modbus`, reads a Fronius Symo Advanced over Modbus TCP (SunSpec). Read-only by default, plus an opt-in active-power-limit control (SunSpec model 123, write) — hardware-verified.
 - Register map details: [docs/SUNSPEC.md](docs/SUNSPEC.md).
 - Tests: `python -m pytest tests -q` (no Home Assistant needed; `sunspec.py` is a pure module).
 - CI must stay green: hassfest + HACS + pytest (`.github/workflows/validate.yml`).

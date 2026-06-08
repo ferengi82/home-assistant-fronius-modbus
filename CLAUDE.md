@@ -4,7 +4,7 @@
 
 ## What this is
 
-A Home Assistant **custom integration** (`fronius_symo_modbus`) that reads a **Fronius Symo Advanced** PV inverter over **Modbus TCP** via the Fronius Datamanager card's **SunSpec** register map. Read-only. HACS-installable. Fully UI-configured (config flow + options flow). Other Fronius devices (e.g. GEN24) are explicitly out of scope.
+A Home Assistant **custom integration** (`fronius_symo_modbus`) that reads a **Fronius Symo Advanced** PV inverter over **Modbus TCP** via the Fronius Datamanager card's **SunSpec** register map. Read-only by default, with an **opt-in active-power-limit control** (SunSpec model 123, write). HACS-installable. Fully UI-configured (config flow + options flow). Other Fronius devices (e.g. GEN24) are explicitly out of scope.
 
 ## Repository layout
 
@@ -19,6 +19,8 @@ custom_components/fronius_symo_modbus/
   models.py          # declarative SensorEntityDescription tables + per-string description builder
   entity.py          # base entity + DeviceInfo (from device_registry)
   sensor.py          # builds sensors from models.py + dynamic per-string sensors
+  number.py          # active-power-limit % (write, only when control enabled)
+  switch.py          # active-power-limit enable (write, only when control enabled)
   diagnostics.py     # config entry diagnostics (serial redacted)
   brand/             # bundled Fronius icon/logo (icon.png, [email protected], logo.png, [email protected])
   strings.json, translations/{en,de}.json
@@ -70,4 +72,5 @@ CI (`.github/workflows/validate.yml`) runs **hassfest**, the **HACS** action and
 - **Don't over-read**: always discover via the header-walk; a bulk read spanning past the chain end returns a Modbus error.
 - **Not-implemented values** are normal (e.g. cabinet/string temperature is NaN on some firmware) → decoders return `None` and the sensor stays unavailable.
 - **Hardware tested** so far only against a Symo Advanced 10.0-3-M in the **float** (113) layout with **2 MPPT strings**; the int+SF path is unit-tested but not hardware-verified.
-- Enabling control/writing (SunSpec model 123) or Smart Meter (model 2xx) would be the natural next features — both are present in the register map but intentionally not implemented.
+- **Aggregate DC current/voltage**: this firmware reports model-113 `dc_current`/`dc_voltage` as NaN (only `dc_power` is filled). `coordinator._derive_dc_aggregates` fills `dc_current` from the per-string sum; no aggregate DC voltage is exposed by design.
+- **Control writes (model 123)**: gated behind the options toggle `enable_control` (default off) **and** require *"inverter control via Modbus"* enabled on the Datamanager — otherwise `write_register` is rejected and surfaces as `HomeAssistantError`. Only the active-power limit is implemented; connect/disconnect and power factor are intentionally left out. Smart Meter (2xx) is not present on the test device.

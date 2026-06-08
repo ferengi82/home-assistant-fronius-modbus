@@ -12,6 +12,9 @@ CONF_PORT: Final = "port"
 CONF_UNIT_ID: Final = "unit_id"
 CONF_SCAN_INTERVAL: Final = "scan_interval"
 CONF_NAME: Final = "name"
+# Opt-in for writing to the inverter (SunSpec model 123 controls).
+CONF_ENABLE_CONTROL: Final = "enable_control"
+DEFAULT_ENABLE_CONTROL: Final = False
 
 # Defaults
 DEFAULT_NAME: Final = "Fronius Symo"

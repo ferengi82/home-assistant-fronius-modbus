@@ -113,15 +113,10 @@ INVERTER_SENSORS: tuple[SensorEntityDescription, ...] = (
         native_unit_of_measurement=UnitOfPower.WATT,
         state_class=SensorStateClass.MEASUREMENT,
     ),
-    SensorEntityDescription(
-        key="dc_voltage",
-        translation_key="dc_voltage",
-        device_class=SensorDeviceClass.VOLTAGE,
-        native_unit_of_measurement=UnitOfElectricPotential.VOLT,
-        state_class=SensorStateClass.MEASUREMENT,
-        suggested_display_precision=1,
-        entity_registry_enabled_default=False,
-    ),
+    # Aggregate DC current is derived from the per-string (model 160) data
+    # because Fronius firmware leaves the inverter-block DC current/voltage
+    # not-implemented. There is no meaningful single DC voltage across two
+    # independent MPPT strings, so only the per-string voltages are exposed.
     SensorEntityDescription(
         key="dc_current",
         translation_key="dc_current",
@@ -129,7 +124,6 @@ INVERTER_SENSORS: tuple[SensorEntityDescription, ...] = (
         native_unit_of_measurement=UnitOfElectricCurrent.AMPERE,
         state_class=SensorStateClass.MEASUREMENT,
         suggested_display_precision=2,
-        entity_registry_enabled_default=False,
     ),
     SensorEntityDescription(
         key="temp_cabinet",
@@ -233,6 +227,14 @@ EXTENDED_SENSORS: tuple[SensorEntityDescription, ...] = (
         translation_key="isolation_resistance",
         native_unit_of_measurement="kΩ",
         state_class=SensorStateClass.MEASUREMENT,
+        entity_category=EntityCategory.DIAGNOSTIC,
+        entity_registry_enabled_default=False,
+    ),
+    SensorEntityDescription(
+        key="pv_connection",
+        translation_key="pv_connection",
+        device_class=SensorDeviceClass.ENUM,
+        options=["connected", "disconnected"],
         entity_category=EntityCategory.DIAGNOSTIC,
         entity_registry_enabled_default=False,
     ),

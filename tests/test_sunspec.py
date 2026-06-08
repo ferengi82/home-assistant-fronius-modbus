@@ -187,6 +187,48 @@ def test_decode_extended_isolation(sunspec):
     assert data["isolation_resistance"] == 10613.0
 
 
+def test_decode_extended_pv_connection(sunspec):
+    block = [0] * 44
+    block[0] = 7  # PVConn = CONNECTED | AVAILABLE | OPERATING
+    assert sunspec.decode_extended(block)["pv_connection"] == "connected"
+    block[0] = 0  # not connected
+    assert sunspec.decode_extended(block)["pv_connection"] == "disconnected"
+    block[0] = 0xFFFF  # not implemented
+    assert sunspec.decode_extended(block)["pv_connection"] is None
+
+
+def _control_block(pct_raw=10000, ena=0, sf=-2):
+    """Build an Immediate Controls (123) data block.
+
+    Fixed offsets: WMaxLimPct@3, WMaxLim_Ena@7, WMaxLimPct_SF@21.
+    """
+    block = [0] * 24
+    block[3] = pct_raw
+    block[7] = ena
+    block[21] = sf & 0xFFFF  # store as uint16
+    return block
+
+
+def test_decode_controls(sunspec):
+    data = sunspec.decode_controls(_control_block(pct_raw=5000, ena=1, sf=-2))
+    assert data["power_limit_pct"] == 50.0
+    assert data["power_limit_enabled"] is True
+    assert data["power_limit_sf"] == -2
+    off = sunspec.decode_controls(_control_block(pct_raw=10000, ena=0, sf=-2))
+    assert off["power_limit_pct"] == 100.0
+    assert off["power_limit_enabled"] is False
+
+
+def test_encode_power_limit_roundtrip(sunspec):
+    for pct in (0, 25, 50, 75, 100):
+        raw = sunspec.encode_power_limit(pct, -2)
+        assert raw == pct * 100
+        assert sunspec.apply_scale(raw, -2) == float(pct)
+    # Clamping to the valid range.
+    assert sunspec.encode_power_limit(150, -2) == 10000
+    assert sunspec.encode_power_limit(-5, -2) == 0
+
+
 def test_full_chain_with_mppt(sunspec):
     # marker + common + inverter(113) + nameplate + 122 + 160 + end
     header = _marker()

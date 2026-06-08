@@ -81,6 +81,8 @@ Writable; only exposed when **inverter control is enabled** in the options flow 
 
 Write: `raw = round(pct / 10**WMaxLimPct_SF)` (see `sunspec.encode_power_limit`). Other model-123 points (Conn connect/disconnect, OutPFSet power factor, reactive-power VArPct) are present but intentionally not exposed.
 
+Verified on the test device: writing `WMaxLimPct = 50 %` with `WMaxLim_Ena = 1` throttled AC output from ~6.9 kW to ~5.0 kW (50 % of the 10 kW rating); disabling the limit and writing 100 % restored full output.
+
 ## Not implemented (intentional)
 
 - Model 123: only the active-power limit; not connect/disconnect (`Conn`) or power factor (`OutPFSet`).
